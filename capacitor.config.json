@@ -1,0 +1,8 @@
+{
+  "appId": "com.freshtrack.app",
+  "appName": "FreshTrack",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  }
+}
