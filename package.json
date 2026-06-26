@@ -1,0 +1,14 @@
+{
+  "name": "freshtrack",
+  "version": "1.0.0",
+  "description": "FreshTrack - suivi anti-gaspillage : scan de codes-barres, dates de peremption et congelateur",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/camera": "^6.1.0",
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1F7A4D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FreshTrack">
+<title>FreshTrack — Anti-gaspi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F2F5F0; --surface:#FFFFFF; --surface-2:#F7F9F5;
+    --primary:#1F7A4D; --primary-d:#155C39; --primary-soft:#E4F1E8;
+    --cold:#1E6FB0; --cold-soft:#E2EFF8;
+    --warn:#E29A2C; --warn-soft:#FBEFD9;
+    --danger:#D14343; --danger-soft:#FBE5E5;
+    --ink:#172019; --muted:#6B7A70; --line:#E4E9E2;
+    --shadow:0 1px 2px rgba(23,32,25,.05), 0 8px 24px rgba(23,32,25,.06);
+    --disp:'Bricolage Grotesque', system-ui, sans-serif;
+    --body:'Inter', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    font-family:var(--body); color:var(--ink); background:var(--bg);
+    overscroll-behavior-y:none; -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select,textarea{font-family:inherit;font-size:16px}
+
+  /* App shell */
+  #app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;position:relative}
+  header.bar{
+    position:sticky;top:0;z-index:20;background:var(--bg);
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 10px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .brand{display:flex;align-items:center;gap:9px}
+  .brand .logo{width:30px;height:30px;display:block}
+  .brand h1{font-family:var(--disp);font-weight:800;font-size:21px;margin:0;letter-spacing:-.02em}
+  .saved-chip{
+    background:var(--primary-soft);color:var(--primary-d);font-weight:700;font-size:12px;
+    padding:7px 11px;border-radius:999px;display:flex;align-items:center;gap:5px;white-space:nowrap;
+  }
+  main{flex:1;padding:6px 16px 120px}
+
+  /* Cards / sections */
+  .section-title{font-family:var(--disp);font-weight:700;font-size:15px;margin:22px 4px 10px;letter-spacing:-.01em}
+  .section-title:first-child{margin-top:8px}
+
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{background:var(--surface);border-radius:16px;padding:14px 12px;box-shadow:var(--shadow);text-align:center}
+  .stat .n{font-family:var(--disp);font-weight:800;font-size:26px;line-height:1}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:6px;font-weight:600}
+  .stat.red .n{color:var(--danger)} .stat.amber .n{color:var(--warn)} .stat.green .n{color:var(--primary)}
+
+  /* Product card */
+  .card{
+    background:var(--surface);border-radius:16px;box-shadow:var(--shadow);
+    padding:12px;display:flex;gap:12px;align-items:center;margin-bottom:10px;position:relative;overflow:hidden;
+  }
+  .card .edge{position:absolute;left:0;top:0;bottom:0;width:5px}
+  .card .thumb{
+    width:48px;height:48px;border-radius:12px;flex-shrink:0;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;
+  }
+  .card .thumb img{width:100%;height:100%;object-fit:cover}
+  .card .info{flex:1;min-width:0}
+  .card .name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .loc-tag{font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--surface-2);color:var(--muted)}
+  .loc-tag.frigo{background:var(--cold-soft);color:var(--cold)}
+  .loc-tag.congelateur{background:#E8EEF2;color:#34678a}
+  .loc-tag.placard{background:#F0EDE4;color:#8a7a4a}
+  .countdown{
+    flex-shrink:0;text-align:center;min-width:54px;padding:8px 6px;border-radius:12px;font-weight:800;
+    font-family:var(--disp);
+  }
+  .countdown .big{font-size:18px;line-height:1}
+  .countdown .sub{font-size:9.5px;font-weight:700;letter-spacing:.04em;opacity:.85;margin-top:2px}
+  .st-expired{background:var(--danger-soft);color:var(--danger)}
+  .st-urgent{background:var(--danger-soft);color:var(--danger)}
+  .st-soon{background:var(--warn-soft);color:var(--warn)}
+  .st-ok{background:var(--primary-soft);color:var(--primary-d)}
+  .edge.st-expired,.edge.st-urgent{background:var(--danger)}
+  .edge.st-soon{background:var(--warn)}
+  .edge.st-ok{background:var(--primary)}
+
+  .empty{text-align:center;color:var(--muted);padding:46px 24px}
+  .empty .em{font-size:40px;display:block;margin-bottom:10px}
+  .empty p{margin:6px 0;font-size:14px}
+
+  /* Filters */
+  .filters{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin:0 -2px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .chip{
+    flex-shrink:0;padding:8px 14px;border-radius:999px;background:var(--surface);font-size:13px;font-weight:600;
+    color:var(--muted);box-shadow:var(--shadow);white-space:nowrap;
+  }
+  .chip.active{background:var(--ink);color:#fff}
+  .search{
+    width:100%;padding:13px 16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);
+    margin-bottom:6px;outline:none;font-size:15px;
+  }
+  .search:focus{border-color:var(--primary)}
+
+  /* Bottom nav */
+  nav.tabbar{
+    position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(255,255,255,.92);
+    backdrop-filter:saturate(180%) blur(12px);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;padding:8px 0 calc(env(safe-area-inset-bottom) + 8px);
+    max-width:560px;margin:0 auto;
+  }
+  nav.tabbar button{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:10.5px;font-weight:600;flex:1;padding:2px}
+  nav.tabbar button .ic{font-size:21px;line-height:1}
+  nav.tabbar button.active{color:var(--primary)}
+
+  /* FAB */
+  .fab{
+    position:fixed;bottom:calc(env(safe-area-inset-bottom) + 78px);right:max(18px, calc(50% - 280px + 18px));
+    z-index:31;width:60px;height:60px;border-radius:20px;background:var(--primary);color:#fff;
+    font-size:30px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 16px rgba(31,122,77,.4);font-weight:300;
+  }
+  .fab:active{transform:scale(.94)}
+
+  /* Sheet (modal) */
+  .scrim{position:fixed;inset:0;background:rgba(20,28,22,.45);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--bg);
+    border-radius:24px 24px 0 0;max-width:560px;margin:0 auto;max-height:94vh;overflow-y:auto;
+    transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);
+    padding-bottom:calc(env(safe-area-inset-bottom) + 16px);
+  }
+  .sheet.open{transform:translateY(0)}
+  .sheet-head{position:sticky;top:0;background:var(--bg);padding:14px 18px 8px;display:flex;align-items:center;justify-content:space-between;z-index:2}
+  .sheet-head h2{font-family:var(--disp);font-weight:800;font-size:19px;margin:0}
+  .grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 0}
+  .x{font-size:24px;color:var(--muted);width:34px;height:34px;border-radius:50%;background:var(--surface)}
+  .sheet-body{padding:6px 18px 18px}
+
+  /* Form */
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin:0 2px 6px}
+  .field input,.field select,.field textarea{
+    width:100%;padding:13px 14px;border-radius:13px;border:1px solid var(--line);background:var(--surface);outline:none;color:var(--ink);
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary)}
+  .field textarea{resize:none;min-height:60px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;padding:11px 6px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-weight:600;font-size:13px;color:var(--muted)}
+  .seg button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .seg.cold button.active{background:var(--cold);border-color:var(--cold)}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4}
+  .btn-primary{
+    width:100%;padding:16px;border-radius:15px;background:var(--primary);color:#fff;font-weight:700;font-size:16px;
+    margin-top:6px;box-shadow:0 4px 12px rgba(31,122,77,.3);
+  }
+  .btn-primary:active{transform:scale(.99)}
+  .btn-ghost{width:100%;padding:13px;border-radius:13px;background:var(--surface);color:var(--muted);font-weight:600;margin-top:10px;border:1px solid var(--line)}
+  .btn-danger-ghost{width:100%;padding:13px;border-radius:13px;background:var(--danger-soft);color:var(--danger);font-weight:700;margin-top:10px}
+
+  .scan-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+  .scan-btn{padding:13px;border-radius:13px;background:var(--surface-2);border:1px dashed var(--line);font-weight:600;font-size:13px;color:var(--primary-d);display:flex;flex-direction:column;align-items:center;gap:4px}
+  .scan-btn .ic{font-size:22px}
+  #reader{width:100%;border-radius:16px;overflow:hidden;margin:6px 0;background:#000}
+  #reader:empty{display:none}
+  .scan-status{font-size:13px;color:var(--muted);text-align:center;margin:8px 0;min-height:18px}
+
+  /* Action buttons on card detail */
+  .detail-acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  .act{padding:14px;border-radius:13px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+  .act.consume{background:var(--primary-soft);color:var(--primary-d)}
+  .act.waste{background:var(--danger-soft);color:var(--danger)}
+
+  /* Bilan / stats page */
+  .big-stat{background:var(--surface);border-radius:18px;padding:18px;box-shadow:var(--shadow);margin-bottom:12px}
+  .big-stat .lab{font-size:13px;color:var(--muted);font-weight:600}
+  .big-stat .val{font-family:var(--disp);font-weight:800;font-size:34px;margin-top:4px;letter-spacing:-.02em}
+  .bar-track{height:10px;border-radius:6px;background:var(--surface-2);overflow:hidden;display:flex;margin-top:14px}
+  .bar-track .seg-bar{height:100%}
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:50%}
+
+  .toast{
+    position:fixed;bottom:calc(env(safe-area-inset-bottom) + 150px);left:50%;transform:translateX(-50%) translateY(10px);
+    background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:60;
+    opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap;box-shadow:var(--shadow);max-width:90vw;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .install-banner{
+    background:linear-gradient(135deg,var(--primary),var(--primary-d));color:#fff;border-radius:16px;padding:14px 16px;
+    margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;line-height:1.45;
+  }
+  .install-banner button{margin-left:auto;background:rgba(255,255,255,.2);color:#fff;font-weight:700;padding:8px 12px;border-radius:10px;font-size:12px;flex-shrink:0}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="bar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="#1F7A4D"/>
+        <path d="M16 6.5c4 0 7 3 7 7.2 0 5.4-7 11.8-7 11.8s-7-6.4-7-11.8c0-4.2 3-7.2 7-7.2z" fill="#fff" opacity=".95"/>
+        <path d="M16 9.5c-1.4 1.6-1.4 3.8 0 5.4 1.4-1.6 1.4-3.8 0-5.4z" fill="#1F7A4D"/>
+        <circle cx="16" cy="17.5" r="1.6" fill="#1F7A4D"/>
+      </svg>
+      <h1>FreshTrack</h1>
+    </div>
+    <div class="saved-chip" id="savedChip">♻️ <span id="savedCount">0</span> sauvés</div>
+  </header>
+
+  <main id="content"></main>
+
+  <button class="fab" id="fab" aria-label="Ajouter un produit">+</button>
+
+  <nav class="tabbar">
+    <button data-view="accueil" class="active"><span class="ic">🏠</span>Accueil</button>
+    <button data-view="inventaire"><span class="ic">📦</span>Inventaire</button>
+    <button data-view="bilan"><span class="ic">📊</span>Bilan</button>
+  </nav>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <div class="sheet-head"><h2 id="sheetTitle">Ajouter un produit</h2><button class="x" id="sheetClose">×</button></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="html5-qrcode.min.js"></script>
+<script>
+/* ============================ Données & état ============================ */
+const CATS = [
+  {id:'viande_rouge', label:'Viande rouge', emoji:'🥩', months:8},
+  {id:'volaille', label:'Volaille', emoji:'🍗', months:9},
+  {id:'hachee', label:'Viande hachée', emoji:'🥓', months:3},
+  {id:'poisson', label:'Poisson', emoji:'🐟', months:4},
+  {id:'fruits_mer', label:'Fruits de mer', emoji:'🦐', months:6},
+  {id:'legumes', label:'Légumes', emoji:'🥦', months:10},
+  {id:'fruits', label:'Fruits', emoji:'🍓', months:10},
+  {id:'pain', label:'Pain / Boulangerie', emoji:'🍞', months:3},
+  {id:'plats', label:'Plats cuisinés / Restes', emoji:'🍲', months:3},
+  {id:'fromage', label:'Fromage', emoji:'🧀', months:6},
+  {id:'beurre', label:'Beurre / M. grasses', emoji:'🧈', months:9},
+  {id:'glace', label:'Glace', emoji:'🍦', months:3},
+  {id:'laitier', label:'Produits laitiers', emoji:'🥛', months:2},
+  {id:'epicerie', label:'Épicerie', emoji:'🍚', months:12},
+  {id:'conserve', label:'Conserves', emoji:'🥫', months:12},
+  {id:'autre', label:'Autre', emoji:'🌿', months:6},
+];
+const catById = id => CATS.find(c=>c.id===id) || CATS[CATS.length-1];
+
+const LOCS = {
+  placard:{label:'Placard', emoji:'🗄️'},
+  frigo:{label:'Réfrigérateur', emoji:'🧊'},
+  congelateur:{label:'Congélateur', emoji:'❄️'},
+};
+
+// Stockage robuste (localStorage + repli mémoire si indisponible)
+const Store = (()=>{
+  let mem={}; let ok=true;
+  try{ const k='__ft_test__'; localStorage.setItem(k,'1'); localStorage.removeItem(k);}catch(e){ ok=false; }
+  return {
+    get(k,def){ try{ if(ok){const v=localStorage.getItem(k); return v?JSON.parse(v):def;} return k in mem?mem[k]:def;}catch(e){return def;} },
+    set(k,v){ try{ if(ok){localStorage.setItem(k,JSON.stringify(v));} else {mem[k]=v;} }catch(e){mem[k]=v;} },
+    persistent: ok
+  };
+})();
+
+let products = Store.get('ft_products', []);
+let currentView = 'accueil';
+let invFilter = 'tous';
+let invSearch = '';
+let editingId = null;
+
+function save(){ Store.set('ft_products', products); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* ============================ Utilitaires dates ============================ */
+const DAY = 86400000;
+function today0(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function parseDate(iso){ if(!iso) return null; const d=new Date(iso+'T00:00:00'); return isNaN(d)?null:d; }
+function toISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addMonths(d,m){ const x=new Date(d); x.setMonth(x.getMonth()+m); return x; }
+// date de référence (péremption ou "à consommer avant" pour le congélo)
+function refDate(p){
+  if(p.location==='congelateur' && p.freezeDate){
+    const base=parseDate(p.freezeDate)||today0();
+    return addMonths(base, p.frozenMonths || catById(p.category).months);
+  }
+  return parseDate(p.expiry);
+}
+function daysLeft(p){ const r=refDate(p); if(!r) return null; return Math.round((r - today0())/DAY); }
+function statusOf(p){
+  const d=daysLeft(p);
+  if(d===null) return 'ok';
+  if(d<0) return 'expired';
+  if(d<=2) return 'urgent';
+  if(d<=7) return 'soon';
+  return 'ok';
+}
+function countdownText(p){
+  const d=daysLeft(p);
+  if(d===null) return {big:'?',sub:'SANS DATE'};
+  if(d<0) return {big:'!', sub:(-d)+'J PASSÉ'};
+  if(d===0) return {big:'0', sub:"AUJOURD'HUI"};
+  return {big:'J-'+d, sub:'RESTANTS'};
+}
+const fmtFR = d => d? d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+/* ============================ Rendu ============================ */
+const content = document.getElementById('content');
+
+function activeProducts(){ return products.filter(p=>p.status==='actif'); }
+
+function render(){
+  document.querySelectorAll('nav.tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.view===currentView));
+  if(currentView==='accueil') renderAccueil();
+  else if(currentView==='inventaire') renderInventaire();
+  else renderBilan();
+  updateSavedChip();
+}
+
+function updateSavedChip(){
+  const saved = products.filter(p=>p.status==='consomme').length;
+  document.getElementById('savedCount').textContent = saved;
+}
+
+function cardHTML(p){
+  const st=statusOf(p); const cd=countdownText(p); const cat=catById(p.category);
+  const r=refDate(p);
+  const thumb = p.image ? `<img src="${p.image}" alt="">` : cat.emoji;
+  const dateLabel = p.location==='congelateur' ? 'Congelé · à consommer avant' : (p.dateType||'DLC');
+  return `<div class="card" data-id="${p.id}">
+    <div class="edge st-${st}"></div>
+    <div class="thumb">${thumb}</div>
+    <div class="info">
+      <div class="name">${escapeHtml(p.name||cat.label)}</div>
+      <div class="meta">
+        <span class="loc-tag ${p.location}">${LOCS[p.location].emoji} ${LOCS[p.location].label}</span>
+        ${p.quantity>1?`<span>×${p.quantity}</span>`:''}
+        <span>${dateLabel} ${fmtFR(r)}</span>
+      </div>
+    </div>
+    <div class="countdown st-${st}"><div class="big">${cd.big}</div><div class="sub">${cd.sub}</div></div>
+  </div>`;
+}
+
+function renderAccueil(){
+  const act=activeProducts();
+  const expired=act.filter(p=>statusOf(p)==='expired');
+  const urgent=act.filter(p=>['urgent'].includes(statusOf(p)));
+  const soon=act.filter(p=>statusOf(p)==='soon');
+  const sorted=[...act].sort((a,b)=>(daysLeft(a)??9e9)-(daysLeft(b)??9e9));
+  const priority=sorted.filter(p=>['expired','urgent','soon'].includes(statusOf(p)));
+
+  let html = installBannerHTML();
+  html += `<div class="stat-row">
+    <div class="stat red"><div class="n">${expired.length}</div><div class="l">Périmés</div></div>
+    <div class="stat amber"><div class="n">${urgent.length}</div><div class="l">≤ 2 jours</div></div>
+    <div class="stat green"><div class="n">${soon.length}</div><div class="l">Cette semaine</div></div>
+  </div>`;
+
+  html += `<div class="section-title">À consommer en priorité</div>`;
+  if(priority.length===0){
+    html += `<div class="empty"><span class="em">🥗</span><p><b>Rien ne presse !</b></p><p>Aucun produit ne périme dans les 7 jours.</p></div>`;
+  } else {
+    html += priority.slice(0,12).map(cardHTML).join('');
+  }
+  content.innerHTML=html;
+  bindCards();
+  bindInstall();
+}
+
+function renderInventaire(){
+  const act=activeProducts();
+  let html = `<input class="search" id="searchBox" placeholder="🔍 Rechercher un produit…" value="${escapeHtml(invSearch)}">`;
+  const counts = {
+    tous: act.length,
+    placard: act.filter(p=>p.location==='placard').length,
+    frigo: act.filter(p=>p.location==='frigo').length,
+    congelateur: act.filter(p=>p.location==='congelateur').length,
+  };
+  html += `<div class="filters">
+    <button class="chip ${invFilter==='tous'?'active':''}" data-f="tous">Tous · ${counts.tous}</button>
+    <button class="chip ${invFilter==='placard'?'active':''}" data-f="placard">🗄️ Placard · ${counts.placard}</button>
+    <button class="chip ${invFilter==='frigo'?'active':''}" data-f="frigo">🧊 Frigo · ${counts.frigo}</button>
+    <button class="chip ${invFilter==='congelateur'?'active':''}" data-f="congelateur">❄️ Congélo · ${counts.congelateur}</button>
+  </div>`;
+
+  let list=act.filter(p=> invFilter==='tous' || p.location===invFilter);
+  if(invSearch.trim()){
+    const q=invSearch.toLowerCase();
+    list=list.filter(p=>(p.name||'').toLowerCase().includes(q) || catById(p.category).label.toLowerCase().includes(q));
+  }
+  list.sort((a,b)=>(daysLeft(a)??9e9)-(daysLeft(b)??9e9));
+
+  if(list.length===0){
+    html += `<div class="empty"><span class="em">📭</span><p><b>Inventaire vide ici</b></p><p>Appuie sur + pour scanner ton premier produit.</p></div>`;
+  } else {
+    html += list.map(cardHTML).join('');
+  }
+  content.innerHTML=html;
+
+  const sb=document.getElementById('searchBox');
+  sb.addEventListener('input', e=>{ invSearch=e.target.value; const pos=sb.selectionStart; renderInventaire(); const nb=document.getElementById('searchBox'); nb.focus(); nb.setSelectionRange(pos,pos); });
+  document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{ invFilter=c.dataset.f; renderInventaire(); }));
+  bindCards();
+}
+
+function renderBilan(){
+  const consumed=products.filter(p=>p.status==='consomme').length;
+  const wasted=products.filter(p=>p.status==='jete').length;
+  const total=consumed+wasted;
+  const rate= total? Math.round(consumed/total*100):0;
+  const act=activeProducts();
+
+  // répartition par lieu
+  const byLoc={placard:0,frigo:0,congelateur:0};
+  act.forEach(p=>byLoc[p.location]++);
+  const totLoc=act.length||1;
+
+  let html='';
+  html += `<div class="section-title" style="margin-top:8px">Ton bilan anti-gaspi</div>`;
+  html += `<div class="big-stat">
+    <div class="lab">Taux de produits consommés à temps</div>
+    <div class="val" style="color:${rate>=70?'var(--primary)':rate>=40?'var(--warn)':'var(--danger)'}">${total?rate+'%':'—'}</div>
+    <div class="bar-track">
+      <div class="seg-bar" style="width:${total?consumed/total*100:0}%;background:var(--primary)"></div>
+      <div class="seg-bar" style="width:${total?wasted/total*100:0}%;background:var(--danger)"></div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--primary)"></span>${consumed} consommés</span>
+      <span><span class="dot" style="background:var(--danger)"></span>${wasted} jetés</span>
+    </div>
+  </div>`;
+
+  html += `<div class="stat-row">
+    <div class="stat green"><div class="n">${act.length}</div><div class="l">En stock</div></div>
+    <div class="stat"><div class="n" style="color:var(--cold)">${byLoc.congelateur}</div><div class="l">Au congélo</div></div>
+    <div class="stat"><div class="n">${consumed}</div><div class="l">Sauvés du gaspi</div></div>
+  </div>`;
+
+  html += `<div class="section-title">Répartition du stock</div>`;
+  html += `<div class="big-stat" style="padding:16px 18px">
+    <div class="bar-track" style="margin-top:0">
+      <div class="seg-bar" style="width:${byLoc.placard/totLoc*100}%;background:#b39a55"></div>
+      <div class="seg-bar" style="width:${byLoc.frigo/totLoc*100}%;background:var(--cold)"></div>
+      <div class="seg-bar" style="width:${byLoc.congelateur/totLoc*100}%;background:#34678a"></div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#b39a55"></span>Placard ${byLoc.placard}</span>
+      <span><span class="dot" style="background:var(--cold)"></span>Frigo ${byLoc.frigo}</span>
+      <span><span class="dot" style="background:#34678a"></span>Congélo ${byLoc.congelateur}</span>
+    </div>
+  </div>`;
+
+  html += `<div class="section-title">Données</div>`;
+  html += `<button class="btn-ghost" id="exportBtn">⬇️ Exporter une sauvegarde (.json)</button>`;
+  html += `<button class="btn-ghost" id="importBtn">⬆️ Importer une sauvegarde</button>`;
+  html += `<input type="file" id="importFile" accept="application/json" class="hidden">`;
+  if(!Store.persistent){
+    html += `<p class="hint" style="margin-top:12px">⚠️ Le stockage local est bloqué dans cet aperçu. Une fois l'appli ouverte directement sur ton téléphone, tes données seront conservées.</p>`;
+  }
+  content.innerHTML=html;
+  document.getElementById('exportBtn').onclick=exportData;
+  document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
+  document.getElementById('importFile').onchange=importData;
+}
+
+function installBannerHTML(){
+  if(Store.get('ft_install_dismissed',false)) return '';
+  return `<div class="install-banner" id="installBanner">
+    <span>📲</span>
+    <div>Installe FreshTrack : menu du navigateur → <b>« Ajouter à l'écran d'accueil »</b>. Elle s'ouvrira comme une vraie appli.</div>
+    <button id="dismissInstall">OK</button>
+  </div>`;
+}
+function bindInstall(){
+  const b=document.getElementById('dismissInstall');
+  if(b) b.onclick=()=>{ Store.set('ft_install_dismissed',true); document.getElementById('installBanner').remove(); };
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================ Détail / actions ============================ */
+function bindCards(){
+  document.querySelectorAll('.card[data-id]').forEach(c=>{
+    c.addEventListener('click',()=>openDetail(c.dataset.id));
+  });
+}
+
+function openDetail(id){
+  const p=products.find(x=>x.id===id); if(!p) return;
+  const cat=catById(p.category); const r=refDate(p); const st=statusOf(p); const cd=countdownText(p);
+  document.getElementById('sheetTitle').textContent = p.name || cat.label;
+  let html=`
+    <div class="card" style="margin-bottom:14px;cursor:default">
+      <div class="edge st-${st}"></div>
+      <div class="thumb">${p.image?`<img src="${p.image}">`:cat.emoji}</div>
+      <div class="info">
+        <div class="name">${escapeHtml(p.name||cat.label)}</div>
+        <div class="meta"><span class="loc-tag ${p.location}">${LOCS[p.location].emoji} ${LOCS[p.location].label}</span><span>${cat.emoji} ${cat.label}</span></div>
+      </div>
+      <div class="countdown st-${st}"><div class="big">${cd.big}</div><div class="sub">${cd.sub}</div></div>
+    </div>`;
+
+  const lines=[];
+  lines.push(['Quantité', '×'+(p.quantity||1)]);
+  if(p.location==='congelateur'){
+    lines.push(['Congelé le', fmtFR(parseDate(p.freezeDate))]);
+    lines.push(['Durée de conservation', (p.frozenMonths||cat.months)+' mois']);
+    lines.push(['À consommer avant', fmtFR(r)]);
+  } else {
+    lines.push([p.dateType==='DDM'?'À consommer de préférence avant (DDM)':'Date limite (DLC)', fmtFR(r)]);
+  }
+  if(p.barcode) lines.push(['Code-barres', p.barcode]);
+  if(p.notes) lines.push(['Notes', escapeHtml(p.notes)]);
+
+  html += `<div class="big-stat" style="padding:4px 16px">` +
+    lines.map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px">
+      <span style="color:var(--muted)">${k}</span><span style="font-weight:600;text-align:right">${v}</span></div>`).join('').replace(/border-bottom:1px solid var\(--line\)">(?=[^]*$)/, 'border-bottom:none">') +
+    `</div>`;
+
+  html += `<div class="detail-acts">
+    <button class="act consume" data-act="consume">✅ Consommé</button>
+    <button class="act waste" data-act="waste">🗑️ Jeté</button>
+  </div>`;
+  html += `<button class="btn-ghost" data-act="edit">✏️ Modifier</button>`;
+  html += `<button class="btn-danger-ghost" data-act="delete">Supprimer définitivement</button>`;
+
+  openSheet('Détail', html);
+  document.querySelector('[data-act="consume"]').onclick=()=>{ p.status='consomme'; p.closedAt=Date.now(); save(); closeSheet(); render(); toast('♻️ Bravo, un produit sauvé du gaspi !'); };
+  document.querySelector('[data-act="waste"]').onclick=()=>{ p.status='jete'; p.closedAt=Date.now(); save(); closeSheet(); render(); toast('Noté. On fera mieux la prochaine fois 💪'); };
+  document.querySelector('[data-act="edit"]').onclick=()=>openForm(p);
+  document.querySelector('[data-act="delete"]').onclick=()=>{ products=products.filter(x=>x.id!==id); save(); closeSheet(); render(); toast('Produit supprimé'); };
+}
+
+/* ============================ Formulaire ajout / édition ============================ */
+function openForm(existing){
+  editingId = existing? existing.id : null;
+  const p = existing || {location:'frigo', dateType:'DLC', quantity:1, category:'autre', freezeDate:toISO(today0())};
+  const catOpts = CATS.map(c=>`<option value="${c.id}" ${p.category===c.id?'selected':''}>${c.emoji} ${c.label}</option>`).join('');
+
+  let html = `
+  ${existing?'':`<div class="scan-actions">
+    <button class="scan-btn" id="scanCode"><span class="ic">📷</span>Scanner le code-barres</button>
+    <button class="scan-btn" id="scanDate"><span class="ic">🔢</span>Scanner la date (beta)</button>
+  </div>
+  <div id="reader"></div>
+  <div class="scan-status" id="scanStatus"></div>
+  <input type="file" id="datePhoto" accept="image/*" capture="environment" class="hidden">`}
+
+  <div class="field"><label>Nom du produit</label><input id="f_name" value="${escapeHtml(p.name||'')}" placeholder="Ex : Yaourt nature, Saumon…"></div>
+
+  <div class="field"><label>Catégorie</label><select id="f_cat">${catOpts}</select></div>
+
+  <div class="field"><label>Où est rangé le produit&nbsp;?</label>
+    <div class="seg" id="f_loc">
+      <button data-loc="placard" class="${p.location==='placard'?'active':''}">🗄️ Placard</button>
+      <button data-loc="frigo" class="${p.location==='frigo'?'active':''}">🧊 Frigo</button>
+      <button data-loc="congelateur" class="${p.location==='congelateur'?'active':''}">❄️ Congélo</button>
+    </div>
+  </div>
+
+  <div id="dateZone"></div>
+
+  <div class="row2">
+    <div class="field"><label>Quantité</label><input id="f_qty" type="number" min="1" value="${p.quantity||1}"></div>
+    <div class="field" id="codeField"><label>Code-barres</label><input id="f_code" value="${escapeHtml(p.barcode||'')}" placeholder="Optionnel" inputmode="numeric"></div>
+  </div>
+
+  <div class="field"><label>Notes</label><textarea id="f_notes" placeholder="Ouvert le…, marque, recette prévue…">${escapeHtml(p.notes||'')}</textarea></div>
+
+  <button class="btn-primary" id="saveBtn">${existing?'Enregistrer les modifications':'Ajouter au stock'}</button>
+  `;
+
+  openSheet(existing?'Modifier le produit':'Ajouter un produit', html);
+
+  // état temporaire du formulaire
+  let loc=p.location;
+  let img=p.image||null;
+
+  function renderDateZone(){
+    const dz=document.getElementById('dateZone');
+    if(loc==='congelateur'){
+      const cat=catById(document.getElementById('f_cat').value);
+      const months = p.frozenMonths || cat.months;
+      dz.innerHTML=`
+      <div class="row2">
+        <div class="field"><label>Date de congélation</label><input id="f_freeze" type="date" value="${p.freezeDate||toISO(today0())}"></div>
+        <div class="field"><label>Conservation (mois)</label><input id="f_months" type="number" min="1" value="${months}"></div>
+      </div>
+      <p class="hint" id="freezeHint"></p>`;
+      const upd=()=>{
+        const fd=parseDate(document.getElementById('f_freeze').value)||today0();
+        const m=parseInt(document.getElementById('f_months').value)||cat.months;
+        document.getElementById('freezeHint').innerHTML = `❄️ Recommandé pour « ${cat.label} » : ~${cat.months} mois. À consommer avant le <b>${fmtFR(addMonths(fd,m))}</b>.`;
+      };
+      document.getElementById('f_freeze').addEventListener('change',upd);
+      document.getElementById('f_months').addEventListener('input',upd);
+      upd();
+    } else {
+      dz.innerHTML=`
+      <div class="field"><label>Type de date</label>
+        <div class="seg" id="f_dtype">
+          <button data-dt="DLC" class="${(p.dateType||'DLC')==='DLC'?'active':''}">DLC — à consommer jusqu'au</button>
+          <button data-dt="DDM" class="${p.dateType==='DDM'?'active':''}">DDM — de préférence avant</button>
+        </div>
+      </div>
+      <div class="field"><label>Date de péremption</label><input id="f_expiry" type="date" value="${p.expiry||''}"></div>
+      <p class="hint">DLC = sécurité (ne pas dépasser). DDM = qualité (souvent bon après).</p>`;
+      let dt=p.dateType||'DLC';
+      dz.querySelectorAll('#f_dtype button').forEach(b=>b.onclick=()=>{ dt=b.dataset.dt; dz.querySelectorAll('#f_dtype button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.getElementById('saveBtn').dataset.dtype=dt; });
+      document.getElementById('saveBtn').dataset.dtype=dt;
+    }
+  }
+  renderDateZone();
+
+  document.querySelectorAll('#f_loc button').forEach(b=>b.onclick=()=>{
+    loc=b.dataset.loc;
+    document.querySelectorAll('#f_loc button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); renderDateZone();
+  });
+  document.getElementById('f_cat').addEventListener('change',()=>{ if(loc==='congelateur') renderDateZone(); });
+
+  // Scan code-barres
+  if(!existing){
+    document.getElementById('scanCode').onclick=startScanner;
+    document.getElementById('scanDate').onclick=()=>document.getElementById('datePhoto').click();
+    document.getElementById('datePhoto').onchange=ocrDate;
+  }
+
+  // sauvegarde
+  document.getElementById('saveBtn').onclick=()=>{
+    const name=document.getElementById('f_name').value.trim();
+    const data={
+      id: editingId||uid(),
+      name, category:document.getElementById('f_cat').value,
+      location:loc, quantity:Math.max(1,parseInt(document.getElementById('f_qty').value)||1),
+      barcode:document.getElementById('f_code').value.trim(),
+      notes:document.getElementById('f_notes').value.trim(),
+      image:img, status:'actif',
+      createdAt: existing?existing.createdAt:Date.now(),
+    };
+    if(loc==='congelateur'){
+      data.freezeDate=document.getElementById('f_freeze').value||toISO(today0());
+      data.frozenMonths=parseInt(document.getElementById('f_months').value)||catById(data.category).months;
+    } else {
+      data.expiry=document.getElementById('f_expiry').value||null;
+      data.dateType=document.getElementById('saveBtn').dataset.dtype||'DLC';
+    }
+    if(!name && !data.barcode){ toast('Donne au moins un nom au produit'); return; }
+    if(loc!=='congelateur' && !data.expiry){ toast('Renseigne la date de péremption'); return; }
+
+    stopScanner();
+    if(editingId){ const i=products.findIndex(x=>x.id===editingId); products[i]={...products[i],...data}; }
+    else products.push(data);
+    save(); closeSheet(); render();
+    toast(editingId?'Produit mis à jour ✅':'Produit ajouté au stock ✅');
+  };
+
+  // helper pour pré-remplir depuis un scan
+  window.__applyProduct=(info)=>{
+    if(info.name) document.getElementById('f_name').value=info.name;
+    if(info.barcode) document.getElementById('f_code').value=info.barcode;
+    if(info.image) img=info.image;
+    if(info.category){ const sel=document.getElementById('f_cat'); if([...sel.options].some(o=>o.value===info.category)) sel.value=info.category; }
+  };
+}
+
+/* ============================ Scanner code-barres ============================ */
+let html5qr=null;
+// Sur Android (appli installée via Capacitor), on demande la permission caméra de l'OS.
+async function ensureNativeCameraPermission(){
+  try{
+    if(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()){
+      const Cam = Capacitor.Plugins && Capacitor.Plugins.Camera;
+      if(Cam && Cam.requestPermissions){ await Cam.requestPermissions({permissions:['camera']}); }
+    }
+  }catch(e){}
+}
+async function startScanner(){
+  const status=document.getElementById('scanStatus');
+  if(typeof Html5Qrcode==='undefined'){ status.textContent='Scanner indisponible. Saisis le code à la main.'; return; }
+  await ensureNativeCameraPermission();
+  const reader=document.getElementById('reader');
+  reader.style.minHeight='250px'; status.textContent='Vise le code-barres…';
+  html5qr=new Html5Qrcode('reader',{verbose:false});
+  html5qr.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:160}},
+    (decoded)=>{ onBarcode(decoded); },
+    ()=>{}
+  ).catch(err=>{ status.textContent='Caméra inaccessible. Autorise l\'accès ou saisis le code à la main.'; });
+}
+function stopScanner(){
+  if(html5qr){ try{ html5qr.stop().then(()=>{html5qr.clear();}).catch(()=>{}); }catch(e){} html5qr=null; }
+  const r=document.getElementById('reader'); if(r){ r.style.minHeight='0'; }
+}
+async function onBarcode(code){
+  stopScanner();
+  const status=document.getElementById('scanStatus');
+  status.textContent='Code détecté : '+code+' — recherche du produit…';
+  document.getElementById('f_code').value=code;
+  navigator.vibrate && navigator.vibrate(60);
+  try{
+    const res=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=product_name,product_name_fr,brands,image_front_small_url,categories_tags');
+    const j=await res.json();
+    if(j.status===1 && j.product){
+      const pr=j.product;
+      const name=pr.product_name_fr||pr.product_name||'';
+      const info={name:(name + (pr.brands?(' · '+pr.brands.split(',')[0]):'')).trim(), barcode:code, image:pr.image_front_small_url, category:guessCategory(pr.categories_tags)};
+      window.__applyProduct(info);
+      status.textContent= name? '✅ Trouvé : '+name : '✅ Code enregistré. Complète le nom.';
+    } else {
+      status.textContent='Produit inconnu dans la base. Saisis le nom toi-même 🙂';
+    }
+  }catch(e){
+    status.textContent='Code enregistré ('+code+'). Pas de réseau pour le nom — complète à la main.';
+  }
+}
+function guessCategory(tags){
+  if(!tags) return null;
+  const t=tags.join(' ');
+  const map=[['viande-hachee','hachee'],['poulet','volaille'],['volaille','volaille'],['boeuf','viande_rouge'],['viande','viande_rouge'],
+    ['poisson','poisson'],['fish','poisson'],['fruit-de-mer','fruits_mer'],['seafood','fruits_mer'],
+    ['legume','legumes'],['vegetable','legumes'],['fruit','fruits'],['pain','pain'],['bread','pain'],
+    ['fromage','fromage'],['cheese','fromage'],['beurre','beurre'],['glace','glace'],['ice-cream','glace'],
+    ['lait','laitier'],['yaourt','laitier'],['dairy','laitier'],['conserve','conserve'],['plat','plats']];
+  for(const [k,v] of map){ if(t.includes(k)) return v; }
+  return null;
+}
+
+/* ============================ OCR date (beta, Tesseract) ============================ */
+async function ocrDate(e){
+  const file=e.target.files[0]; if(!file) return;
+  const status=document.getElementById('scanStatus');
+  status.textContent='Lecture de la date en cours… (peut prendre 10–20 s)';
+  try{
+    if(typeof Tesseract==='undefined'){
+      await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+    }
+    const url=URL.createObjectURL(file);
+    const {data}=await Tesseract.recognize(url, 'eng', {});
+    URL.revokeObjectURL(url);
+    const iso=extractDate(data.text||'');
+    if(iso){
+      const loc=document.querySelector('#f_loc button.active').dataset.loc;
+      if(loc==='congelateur'){ status.textContent='Date lue : '+iso+'. (Pour le congélo, renseigne plutôt la date de congélation.)'; }
+      else{ const fld=document.getElementById('f_expiry'); if(fld){ fld.value=iso; status.textContent='✅ Date détectée : '+iso+' (vérifie-la).'; } }
+    } else {
+      status.textContent='Date illisible. Saisis-la à la main via le calendrier.';
+    }
+  }catch(err){
+    status.textContent='Lecture impossible. Saisis la date à la main.';
+  }
+}
+function extractDate(text){
+  const T=text.replace(/[Oo]/g,'0').replace(/[lI]/g,'1');
+  let m;
+  // jj/mm/aaaa ou jj.mm.aa
+  m=T.match(/(\d{1,2})[\/.\-\s](\d{1,2})[\/.\-\s](\d{2,4})/);
+  if(m){ let[_,d,mo,y]=m; y=y.length===2?'20'+y:y; return buildISO(y,mo,d); }
+  // mm/aaaa  (DDM "fin 05/2026") -> dernier jour du mois
+  m=T.match(/(\d{1,2})[\/.\-\s](\d{4})/);
+  if(m){ let[_,mo,y]=m; const last=new Date(+y, +mo, 0).getDate(); return buildISO(y,mo,last); }
+  return null;
+}
+function buildISO(y,mo,d){
+  mo=Math.min(12,Math.max(1,+mo)); d=Math.min(31,Math.max(1,+d));
+  const iso=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  return isNaN(new Date(iso))?null:iso;
+}
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+
+/* ============================ Export / import ============================ */
+function exportData(){
+  const blob=new Blob([JSON.stringify({app:'FreshTrack',version:1,exportedAt:new Date().toISOString(),products},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='freshtrack-sauvegarde-'+toISO(today0())+'.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  toast('Sauvegarde exportée ⬇️');
+}
+function importData(e){
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    const j=JSON.parse(r.result);
+    if(Array.isArray(j.products)){ products=j.products; save(); render(); toast('Sauvegarde importée ✅'); }
+    else toast('Fichier non reconnu');
+  }catch(err){ toast('Fichier illisible'); } };
+  r.readAsText(file);
+}
+
+/* ============================ Sheet & toast ============================ */
+const scrim=document.getElementById('scrim'), sheet=document.getElementById('sheet');
+function openSheet(title, bodyHTML){
+  document.getElementById('sheetBody').innerHTML=bodyHTML;
+  scrim.classList.add('open'); sheet.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeSheet(){
+  stopScanner();
+  scrim.classList.remove('open'); sheet.classList.remove('open');
+  document.body.style.overflow='';
+  editingId=null;
+}
+document.getElementById('sheetClose').onclick=closeSheet;
+scrim.onclick=closeSheet;
+
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* ============================ Navigation ============================ */
+document.querySelectorAll('nav.tabbar button').forEach(b=>b.onclick=()=>{ currentView=b.dataset.view; render(); });
+document.getElementById('fab').onclick=()=>openForm(null);
+document.getElementById('sheetTitle'); // ensure exists
+
+/* ============================ PWA install (manifest dynamique) ============================ */
+(function(){
+  const icon="data:image/svg+xml;base64,"+btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#1F7A4D"/><path d="M16 6.5c4 0 7 3 7 7.2 0 5.4-7 11.8-7 11.8s-7-6.4-7-11.8c0-4.2 3-7.2 7-7.2z" fill="#fff"/><circle cx="16" cy="17.5" r="1.6" fill="#1F7A4D"/></svg>`);
+  const manifest={name:'FreshTrack',short_name:'FreshTrack',start_url:'.',display:'standalone',background_color:'#F2F5F0',theme_color:'#1F7A4D',icons:[{src:icon,sizes:'192x192',type:'image/svg+xml'},{src:icon,sizes:'512x512',type:'image/svg+xml'}]};
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  const link=document.createElement('link'); link.rel='manifest'; link.href=URL.createObjectURL(blob); document.head.appendChild(link);
+})();
+
+/* ============================ Données de démo (premier lancement) ============================ */
+if(products.length===0 && !Store.get('ft_seeded',false)){
+  const t=today0();
+  products=[
+    {id:uid(),name:'Yaourt nature',category:'laitier',location:'frigo',quantity:4,dateType:'DLC',expiry:toISO(new Date(+t+1*DAY)),status:'actif',createdAt:Date.now()},
+    {id:uid(),name:'Saumon frais',category:'poisson',location:'frigo',quantity:1,dateType:'DLC',expiry:toISO(new Date(+t-1*DAY)),status:'actif',createdAt:Date.now()},
+    {id:uid(),name:'Steaks hachés',category:'hachee',location:'congelateur',quantity:6,freezeDate:toISO(new Date(+t-30*DAY)),frozenMonths:3,status:'actif',createdAt:Date.now()},
+    {id:uid(),name:'Petits pois',category:'legumes',location:'congelateur',quantity:1,freezeDate:toISO(new Date(+t-60*DAY)),frozenMonths:10,status:'actif',createdAt:Date.now()},
+    {id:uid(),name:'Pâtes',category:'epicerie',location:'placard',quantity:2,dateType:'DDM',expiry:toISO(new Date(+t+200*DAY)),status:'actif',createdAt:Date.now()},
+  ];
+  Store.set('ft_seeded',true); save();
+}
+
+render();
+</script>
+</body>
+</html>
